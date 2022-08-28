@@ -24,10 +24,12 @@ class Disrepair:
     skip = []
     up2date = []
 
-    def __init__(self, info, verbose, json_repo, simple_repo, simple_only, json_only, pin_warn):
-        self.console = Console()
+    def __init__(self, info, verbose, boring, json_repo, simple_repo, simple_only, json_only, pin_warn):
+        if not boring:
+            self.console = Console()
         self.opt_verbose = verbose
         self.opt_info = info
+        self.opt_boring = boring
         self.opt_json_only = json_only
         self.opt_simple_only = simple_only
         self.opt_pin_warn = pin_warn
@@ -54,31 +56,37 @@ class Disrepair:
         if self.opt_verbose:
             self.up2date.append(f"✅ {name} {version}")
 
+    def header(self, message):
+        if self.opt_boring:
+            print(f":: {message}")
+        else:
+            self.console.rule(f"[bold]{message}", align='left')
+
     def print(self):
         if self.updates:
             if self.pins or (self.skip and self.opt_verbose) or (self.up2date and self.opt_verbose) or self.errors:
-                self.console.rule("[bold]Updates", align='left')
+                self.header("Updates")
             for line in self.updates:
                 print(line)
 
         if self.pins:
-            self.console.rule("[bold]Unpinned", align='left')
+            self.header("Unpinned")
             for line in self.pins:
                 print(line)
 
         if self.opt_verbose:
             if self.skip:
-                self.console.rule("[bold]Skipped", align='left')
+                self.header("Skipped")
                 for line in self.skip:
                     print(line)
 
             if self.up2date:
-                self.console.rule("[bold]Up to date", align='left')
+                self.header("Up-to-date")
                 for line in self.up2date:
                     print(line)
 
         if self.errors:
-            self.console.rule("[bold]Errors", align='left')
+            self.header("Errors")
             for line in self.errors:
                 print(line)
 
@@ -269,8 +277,11 @@ class Disrepair:
                         self.error(f"Specified version ({spec}) is higher than latest ({latest})")
 
     def check(self, filepath):
-        with self.console.status("[bold]Checking requirements..."):
+        if self.opt_boring:
             self.check_file(filepath)
+        else:
+            with self.console.status("[bold]Checking requirements..."):
+                self.check_file(filepath)
         self.print()
 
 
@@ -278,17 +289,18 @@ class Disrepair:
 @click.argument('filename')
 @click.option('--verbose', '-v', is_flag=True, help='Show all package statuses')
 @click.option('--info', '-i', is_flag=True, help='Show likely package changelog/info links')
+@click.option('--boring', '-b', is_flag=True, help='Disable the rich text formatting')
 @click.option('--json-repo', '-j', default=JSON_REPO, help='Repository URL for the JSON API')
 @click.option('--simple-repo', '-s', default=SIMPLE_REPO, help='Repository URL for the Simple API')
 @click.option('--simple-only', '-S', is_flag=True, help='Only use the Simple API to lookup versions')
 @click.option('--json-only', '-J', is_flag=True, help='Only use the JSON API to lookup versions')
 @click.option('--pin-warn', '-p', is_flag=True, help='Warn when a package version is not pinned')
 @click.pass_context
-def check(ctx, filename, info, verbose, json_repo, simple_repo, simple_only, json_only, pin_warn):
+def check(ctx, filename, info, verbose, boring, json_repo, simple_repo, simple_only, json_only, pin_warn):
     if simple_only and json_only:
         ctx.fail("--simple-only and --json-only cannot both be set")
 
-    t = Disrepair(info, verbose, json_repo, simple_repo, simple_only, json_only, pin_warn)
+    t = Disrepair(info, verbose, boring, json_repo, simple_repo, simple_only, json_only, pin_warn)
     t.check(filename)
 
 
