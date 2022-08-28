@@ -104,11 +104,14 @@ class Disrepair:
 
         if 'info' in data:
             if 'project_urls' in data['info']:
-                if 'Changelog' in data['info']['project_urls']:
-                    return ver, data['info']['project_urls']['Changelog']
+                if data['info']['project_urls']:
+                    if 'Changelog' in data['info']['project_urls']:
+                        if data['info']['project_urls']['Changelog']:
+                            return ver, data['info']['project_urls']['Changelog']
 
-                if 'Changes' in data['info']['project_urls']:
-                    return ver, data['info']['project_urls']['Changes']
+                    if 'Changes' in data['info']['project_urls']:
+                        if data['info']['project_urls']['Changes']:
+                            return ver, data['info']['project_urls']['Changes']
 
             if 'docs_url' in data['info']:
                 if data['info']['docs_url']:
