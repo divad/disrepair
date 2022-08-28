@@ -5,11 +5,7 @@ import os.path
 import click
 import requests
 from packaging.version import InvalidVersion, Version
-from pypi_simple import (
-    PyPISimple,
-    UnsupportedContentTypeError,
-    UnsupportedRepoVersionError,
-)
+from pypi_simple import PyPISimple, UnsupportedContentTypeError, UnsupportedRepoVersionError
 from requirements.requirement import Requirement
 from rich.console import Console
 
