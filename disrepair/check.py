@@ -226,8 +226,11 @@ class Disrepair:
                         continue
 
                     _, new_filename = line.split()
-                    new_file = os.path.join(os.path.dirname(filename or '.'), new_filename)
-                    self.check_file(new_file, recursed=True)
+                    new_file = os.path.join(os.path.dirname(filepath or '.'), new_filename)
+                    if not os.path.exists(new_file):
+                        self.error(new_file, 'File does not exist')
+                    else:
+                        self.check_file(new_file, recursed=True)
 
                 elif line.startswith('-'):
                     # Don't support any other options.
