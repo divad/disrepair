@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "disrepair"
-version = "0.3.0"
+version = "0.3.1"
 description = "Checks for out-of-date Python packages in requirements files"
 authors = ["David Bell <dave@evad.io>"]
 

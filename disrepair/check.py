@@ -281,7 +281,10 @@ class Disrepair:
                     elif ver_latest == ver_spec:
                         self.ok(req.name, latest)
                     elif ver_latest < ver_spec:
-                        self.error(f"Specified version ({spec}) is higher than latest ({latest})")
+                        self.error(
+                            req.name,
+                            f"Specified version ({spec}) is greater than the latest available ({latest})"
+                        )
 
     def check(self, filepath):
         if self.opt_boring:
