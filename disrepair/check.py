@@ -5,7 +5,7 @@ import os.path
 import click
 import requests
 from packaging.version import InvalidVersion, Version
-from pypi_simple import PyPISimple, UnsupportedContentTypeError, UnsupportedRepoVersionError
+from pypi_simple import PyPISimple, UnsupportedContentTypeError, UnsupportedRepoVersionError, NoSuchProjectError
 from requirements.requirement import Requirement
 from rich.console import Console
 
@@ -149,6 +149,10 @@ class Disrepair:
                 raise CheckFailed("Unsupported repo version")
             except UnsupportedContentTypeError:
                 raise CheckFailed("Unsupported content type")
+            except NoSuchProjectError:
+                raise CheckFailed("Package not found")
+            except Exception as exc:
+                raise CheckFailed(f"Unexpected error: {exc}")
 
             if page is None:
                 raise CheckFailed("Package not found")
