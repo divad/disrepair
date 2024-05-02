@@ -1,3 +1,1 @@
-from .check import check
-
-__version__ = '0.2.1'
+__version__ = '1.0.0'

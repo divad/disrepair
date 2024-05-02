@@ -1,3 +1,4 @@
-from . import check
+from .cmd import cli
 
-check()
+if __name__ == '__main__':
+    cli()
