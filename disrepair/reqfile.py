@@ -7,7 +7,7 @@ from enum import Enum
 from requirements.requirement import Requirement
 
 
-class ParseStatus(Enum):
+class LineType(Enum):
     requirement = "requirement"
     error = "error"
     unsupported = "unsupported"
@@ -23,7 +23,7 @@ class UpdateStatus(Enum):
 
 @dataclass
 class Line:
-    status: ParseStatus
+    ltype: LineType
 
     filename: str
     lineno: int
@@ -35,7 +35,7 @@ class Line:
     latest: str | None = None
     url: str | None = None
 
-    update: UpdateStatus = UpdateStatus.unknown
+    status: UpdateStatus = UpdateStatus.unknown
 
     @property
     def location(self) -> str:
@@ -60,7 +60,7 @@ class ReqFile:
     def store(
         self,
         line: str,
-        status: ParseStatus,
+        status: LineType,
         pkgname: str | None = None,
         error: str | None = None,
         spec: str | None = None,
@@ -69,10 +69,10 @@ class ReqFile:
 
     def _parse_line(self, line: str) -> None:
         if line.strip() == "":
-            return self.store(line, ParseStatus.other)
+            return self.store(line, LineType.other)
 
         elif not line or line.startswith("#"):
-            return self.store(line, ParseStatus.other)
+            return self.store(line, LineType.other)
 
         # Other requirements files.
         elif line.startswith("-r") or line.startswith("--requirement"):
@@ -81,19 +81,19 @@ class ReqFile:
             if not os.path.exists(new_file):
                 return self.store(
                     line,
-                    ParseStatus.error,
+                    LineType.error,
                     error="Requirement file does not exist",
                     pkgname=new_file,
                 )
             else:
                 self.other_files.append(new_file)
-                return self.store(line, ParseStatus.other)
+                return self.store(line, LineType.other)
 
         elif line.startswith("-"):
-            return self.store(line, ParseStatus.unsupported, error="Unsupported argument")
+            return self.store(line, LineType.unsupported, error="Unsupported argument")
 
         elif line.startswith("./"):
-            return self.store(line, ParseStatus.unsupported, error="Local files unsupported")
+            return self.store(line, LineType.unsupported, error="Local files unsupported")
 
         else:
             try:
@@ -101,26 +101,26 @@ class ReqFile:
             except Exception as ex:
                 return self.store(
                     line,
-                    ParseStatus.error,
+                    LineType.error,
                     error=f"Could not parse line: {ex}",
                 )
 
             if req.uri:
                 return self.store(
                     line,
-                    ParseStatus.unsupported,
+                    LineType.unsupported,
                     pkgname=req.name,
                     error="Package URLs unsupported",
                 )
 
             if len(req.specs) == 0:
                 # Unpinned requirement.
-                return self.store(line, ParseStatus.requirement, pkgname=req.name)
+                return self.store(line, LineType.requirement, pkgname=req.name)
 
             if len(req.specs) != 1:
                 return self.store(
                     line,
-                    ParseStatus.unsupported,
+                    LineType.unsupported,
                     error="Unsupported version spec",
                     pkgname=req.name,
                 )
@@ -128,9 +128,9 @@ class ReqFile:
             if req.specs[0][0] not in ["==", ">="]:
                 return self.store(
                     line,
-                    ParseStatus.unsupported,
+                    LineType.unsupported,
                     error="Unsupported version spec",
                     pkgname=req.name,
                 )
 
-            self.store(line, ParseStatus.requirement, pkgname=req.name, spec=req.specs[0][1])
+            self.store(line, LineType.requirement, pkgname=req.name, spec=req.specs[0][1])

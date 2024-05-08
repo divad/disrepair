@@ -7,7 +7,10 @@ from rich.prompt import Confirm
 from rich.table import Table
 
 from .options import Options
-from .reqfile import Line, ParseStatus, ReqFile, UpdateStatus
+from .reqfile import Line, LineType, ReqFile, UpdateStatus
+
+
+TIMEOUT = 5
 
 
 class CheckFailed(Exception):
@@ -30,7 +33,7 @@ class Disrepair:
 
     def get_pypi_version(self, name: str) -> tuple[str | None, str | None]:
         try:
-            r = requests.get(f"{self.opt.json_repo}/{name}/json", timeout=3)
+            r = requests.get(f"{self.opt.json_repo}/{name}/json", timeout=TIMEOUT)
         except requests.Timeout:
             raise CheckFailed("Timeout exceeded when connecting to PyPI")
         except requests.ConnectionError:
@@ -80,7 +83,7 @@ class Disrepair:
     def get_pypi_simple_version(self, name: str) -> tuple[str | None, str | None]:
         with PyPISimple(endpoint=self.opt.simple_repo) as client:
             try:
-                page = client.get_project_page(name, timeout=5)
+                page = client.get_project_page(name, timeout=TIMEOUT)
             except requests.RequestException:
                 raise CheckFailed("Connection error")
             except UnsupportedRepoVersionError:
@@ -98,7 +101,7 @@ class Disrepair:
             if not page.packages:
                 raise CheckFailed("Package not found")
 
-            # There is not a guarantee that versions are listed in order.
+            # There is no guarantee that versions are listed in order.
             # We must thus check every version and pick the latest stable version.
 
             chosen_version = None
@@ -171,7 +174,7 @@ class Disrepair:
         ) as status:
             task = status.add_task("[bold]Checking", total=len(lines))
             for line in lines:
-                if line.status == ParseStatus.requirement:
+                if line.ltype == LineType.requirement:
                     if line.pkgname:
                         try:
                             line.latest, line.url = self.get_version(line.pkgname)
@@ -180,18 +183,18 @@ class Disrepair:
                             self.errors.append(line)
                         else:
                             if line.spec is None:
-                                line.update = UpdateStatus.unpinned
+                                line.status = UpdateStatus.unpinned
                                 self.unpinned.append(line)
                             else:
                                 if line.latest:
                                     ver_latest = Version(line.latest)
                                     ver_spec = Version(line.spec)
                                     if ver_latest > ver_spec:
-                                        line.update = UpdateStatus.behind
+                                        line.status = UpdateStatus.behind
                                         self.updates.append(line)
 
                                     elif ver_latest == ver_spec:
-                                        line.update = UpdateStatus.ok
+                                        line.status = UpdateStatus.ok
                                         self.up2date.append(line)
 
                                     elif ver_latest < ver_spec:
@@ -202,9 +205,9 @@ class Disrepair:
                                         )
                                         self.errors.append(line)
 
-                elif line.status == ParseStatus.error:
+                elif line.ltype == LineType.error:
                     self.errors.append(line)
-                elif line.status == ParseStatus.unsupported:
+                elif line.ltype == LineType.unsupported:
                     self.unsupported.append(line)
 
                 status.update(task, advance=1)
@@ -284,8 +287,8 @@ class Disrepair:
             num_updated = 0
 
             for line in reqfile.lines:
-                if line.status == ParseStatus.requirement:
-                    if line.update == UpdateStatus.behind or line.update == UpdateStatus.unpinned:
+                if line.ltype == LineType.requirement:
+                    if line.status == UpdateStatus.behind or line.status == UpdateStatus.unpinned:
                         if self.opt.auto_update:
                             do_update = True
                         else:
